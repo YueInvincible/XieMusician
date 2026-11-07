@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xie's Musician</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet">
+</head>
+
+<body class="floating-app">
+
+  <!-- =========================================================
+       VIEW 1: MINI FLOATING HUD (DEFAULT ON STARTUP)
+       ========================================================= -->
+  <div id="miniView" class="mini-hud-shell">
+
+    <!-- Top Drag Handle & Controls -->
+    <div class="mini-top-row pywebview-drag-region">
+      <div class="mini-brand">
+        <img src="icon.png" class="brand-avatar-mini" alt="Icon">
+        <span class="mini-brand-name">Xie's Musician</span>
+      </div>
+
+      <div class="mini-marquee-wrapper no-drag">
+        <button id="btnPrevSongMini" class="mini-nav-btn no-drag" title="Bài trước">‹</button>
+        <span id="miniSongTitle" class="mini-song-title no-drag" title="Nhấp vào để chọn danh sách bài hát">Đang tải bài hát...</span>
+        <button id="btnNextSongMini" class="mini-nav-btn no-drag" title="Bài tiếp">›</button>
+      </div>
+
+      <div class="mini-window-actions no-drag">
+        <button id="btnSettingsMini" class="action-btn" title="Cài đặt phím tắt (Keybinds)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </button>
+        <button id="btnExpandToFull" class="action-btn" title="Mở rộng giao diện đầy đủ (Full Mode)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 3 21 3 21 9" />
+            <polyline points="9 21 3 21 3 15" />
+            <line x1="21" y1="3" x2="14" y2="10" />
+            <line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
+        </button>
+        <button id="btnCloseApp" class="action-btn btn-close-danger" title="Tắt hoàn toàn ứng dụng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Compact Floating Song Dropdown on Mini HUD -->
+    <div id="miniSongDropdown" class="mini-song-dropdown hidden no-drag">
+      <div class="mini-dropdown-search no-drag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="miniSearchInput" placeholder="Tìm kiếm bài hát..." class="no-drag" autocomplete="off" spellcheck="false">
+      </div>
+      <!-- Playlist quick filter row on Mini HUD -->
+      <div id="miniPlaylistFilter" class="mini-playlist-filter no-drag"></div>
+      <div id="miniDropdownList" class="mini-dropdown-list no-drag"></div>
+    </div>
+
+    <!-- Middle Progress & Timing -->
+    <div class="mini-progress-section no-drag">
+      <div class="progress-track-container no-drag" id="miniProgressClickArea">
+        <div class="progress-track no-drag">
+          <div id="miniProgressBar" class="progress-fill no-drag"></div>
+          <div id="miniProgressThumb" class="progress-thumb no-drag"></div>
+        </div>
+      </div>
+      <div class="timing-row no-drag">
+        <span id="miniTimeElapsed" class="mono-time no-drag">00:00</span>
+        <span id="miniStatusLabel" class="mini-status-text no-drag">SẴN SÀNG</span>
+        <span id="miniTimeRemaining" class="mono-time no-drag">-00:00</span>
+      </div>
+    </div>
+
+    <!-- Bottom Action Controls -->
+    <div class="mini-bottom-row no-drag">
+      <!-- Play / Pause in Game (Immediately hides window and auto-plays) -->
+      <button id="btnPlayInGame" class="btn-game-play no-drag"
+        title="Phát / Tạm dừng vào game Sky (Phím tắt: F6. Khi phát sẽ tự động ẩn cửa sổ, bấm Right-Shift để hiện lại)">
+        <span id="gamePlayIcon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+        </span>
+        <span id="gamePlayText">Vào Game</span>
+      </button>
+
+      <!-- Preview sound toggle (Play / Pause in app) -->
+      <button id="btnPreviewSound" class="btn-action-pill no-drag" title="Nghe thử âm thanh đàn Sky trong App (Bấm lại để Tạm dừng)">
+        <span id="previewSoundIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+            <path
+              d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+          </svg>
+        </span>
+        <span id="previewSoundText">Nghe thử</span>
+      </button>
+
+      <!-- Safe Stop -->
+      <button id="btnStopMini" class="btn-action-icon btn-stop-icon no-drag" title="Dừng phát (F8)">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="6" width="12" height="12" rx="2" />
+        </svg>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- =========================================================
+       VIEW 2: FULL STUDIO MODE (EXPANDED)
+       ========================================================= -->
+  <div id="fullView" class="full-studio-shell hidden">
+
+    <!-- Full Top Bar -->
+    <header class="studio-header pywebview-drag-region">
+      <div class="header-left">
+        <div class="studio-badge">
+          <img src="icon.png" class="brand-avatar-full" alt="Icon">
+          <span class="studio-title">Xie's Musician</span>
+        </div>
+        <button id="btnToggleHumanize" class="anti-ban-btn active no-drag" title="Nhấp để Bật/Tắt chế độ mô phỏng ngón tay người (Anti-Ban). BẬT: micro-jitter thời gian và bấm hợp âm so le để chống bị quét tự động. TẮT: đánh chính xác 100% tuyệt đối theo sheet.">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shield-icon">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span id="humanizeStatusText">Mô phỏng người: Bật</span>
+        </button>
+      </div>
+
+      <div class="header-right no-drag">
+        <button id="btnSettingsFull" class="action-btn" title="Cài đặt phím tắt (Keybinds)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </button>
+        <button id="btnCollapseToMini" class="action-btn" title="Thu nhỏ về Mini Floating HUD">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="4 14 10 14 10 20" />
+            <polyline points="20 10 14 10 14 4" />
+            <line x1="14" y1="10" x2="21" y2="3" />
+            <line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
+        </button>
+        <button id="btnCloseAppFull" class="action-btn btn-close-danger" title="Tắt hoàn toàn ứng dụng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Studio Grid Body -->
+    <div class="studio-body">
+
+      <!-- Left Column: Visualizer, Instrument & Controls -->
+      <section class="studio-stage">
+
+        <!-- Now Playing Card -->
+        <div class="stage-info-card">
+          <div class="song-headings">
+            <span class="section-tag">BÀI HÁT ĐANG CHỌN</span>
+            <h2 id="fullSongTitle" class="hero-song-title">Nơi Này Có Anh</h2>
+            <div class="hero-song-meta">
+              <span id="fullSongAuthor" class="author-label">Sơn Tùng M-TP</span>
+              <span class="dot-divider">•</span>
+              <span id="fullSongFormat" class="format-badge">JSON</span>
+              <span class="dot-divider">•</span>
+              <span id="fullSongNotes" class="notes-count">227 nốt</span>
+            </div>
+          </div>
+
+          <!-- Speed, Preset & Instrument Controls -->
+          <div class="quick-controls">
+            <div class="preset-selector">
+              <span class="ctrl-label">Nhạc cụ:</span>
+              <select id="selectInstrument" class="mini-select" title="Chọn loại nhạc cụ Sky">
+                <option value="piano">Piano</option>
+                <option value="harp">Đàn Hạc</option>
+                <option value="flute">Sáo Trúc</option>
+                <option value="kalimba">Kalimba</option>
+                <option value="horn">Kèn Horn</option>
+              </select>
+            </div>
+
+            <div class="preset-selector">
+              <span class="ctrl-label">Phím:</span>
+              <select id="selectKeyPreset" class="mini-select">
+                <option value="sky_steam">Steam (YUIOP)</option>
+                <option value="qwert">QWERTY</option>
+                <option value="numbers">Phím Số</option>
+              </select>
+            </div>
+
+            <div class="speed-slider-group">
+              <div class="speed-info">
+                <span class="ctrl-label">Tốc độ:</span>
+                <span id="speedValueDisplay" class="gold-text">1.0x</span>
+              </div>
+              <input type="range" id="speedSlider" min="0.3" max="2.2" step="0.05" value="1.0" class="sleek-slider">
+            </div>
+          </div>
+        </div>
+
+        <!-- Waterfall Light Canvas -->
+        <div class="waterfall-box">
+          <canvas id="waterfallCanvas"></canvas>
+          <div class="waterfall-bottom-glow"></div>
+        </div>
+
+        <!-- 3x5 Sky Instrument Keyboard -->
+        <div class="instrument-box">
+          <div class="instrument-grid" id="fullInstrumentGrid">
+            <!-- 15 Diamond Keys generated dynamically -->
+          </div>
+        </div>
+
+        <!-- Full Player Controls -->
+        <div class="full-player-bar">
+          <div class="full-timing-row">
+            <span id="fullTimeElapsed" class="mono-time">00:00</span>
+            <div class="full-seek-track" id="fullSeekTrack">
+              <div id="fullSeekFill" class="progress-fill"></div>
+              <div id="fullSeekThumb" class="progress-thumb"></div>
+            </div>
+            <span id="fullTimeRemaining" class="mono-time">-00:00</span>
+          </div>
+
+          <div class="full-btn-row">
+            <button id="btnFullPlayGame" class="btn-game-play">
+              <span id="fullGamePlayIcon">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+              </span>
+              <span id="fullGamePlayText">Phát vào Game (Ẩn App)</span>
+            </button>
+
+            <button id="btnFullPreview" class="btn-action-pill">
+              <span id="fullPreviewIcon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                </svg>
+              </span>
+              <span id="fullPreviewText">Nghe thử</span>
+            </button>
+
+            <button id="btnFullStop" class="btn-action-icon btn-stop-icon" title="Dừng">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Song Library, Queue & Sheet Tools -->
+      <aside class="studio-sidebar">
+
+        <!-- Tabs: Bài Hát | Hàng Đợi | Tạo & Tải Sheet -->
+        <div class="sidebar-tabs">
+          <button id="tabBtnLocal" class="sidebar-tab active">
+            <span>Bài Hát</span>
+            <span id="libSongCount" class="tab-badge">0</span>
+          </button>
+          <button id="tabBtnQueue" class="sidebar-tab">
+            <span>Hàng Đợi</span>
+            <span id="queueBadge" class="tab-badge">0</span>
+          </button>
+          <button id="tabBtnOnline" class="sidebar-tab">
+            <span>Tạo &amp; Tải Sheet</span>
+            <span class="online-pulse"></span>
+          </button>
+        </div>
+
+        <!-- VIEW A: LOCAL LIBRARY (Dedicated full height) -->
+        <div id="viewLocalLib" class="sidebar-view-pane">
+          <!-- Custom Playlist Filter Bar + Play All -->
+          <div class="playlist-section-header">
+            <span class="ctrl-label" style="font-size:0.72rem;">Playlist:</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button id="btnPlayAllPlaylist" class="btn-play-all" title="Phát toàn bộ bài hát trong playlist này theo thứ tự">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                <span>Phát tất cả</span>
+              </button>
+              <button id="btnNewPlaylist" class="btn-new-playlist" title="Tạo playlist mới">+ Playlist</button>
+            </div>
+          </div>
+          <div id="playlistPills" class="playlist-pills">
+            <!-- Dynamically populated: Tất cả | Yêu thích | ... -->
+          </div>
+
+          <!-- Search & Folder Link -->
+          <div class="sidebar-search-row">
+            <div class="sidebar-search" style="flex:1;">
+              <input type="text" id="libSearchInput" placeholder="Tìm kiếm bài hát, ca sĩ...">
+            </div>
+            <button id="btnOpenFolderSide" class="btn-icon-square" title="Mở thư mục Songs trên máy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Song Items (Full height list, scrollable) -->
+          <div class="sidebar-song-scroll" id="libSongList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- VIEW B: PLAYBACK QUEUE -->
+        <div id="viewQueueLib" class="sidebar-view-pane hidden">
+          <div class="queue-toolbar">
+            <button id="btnStartQueuePlay" class="btn-queue-play" title="Bắt đầu phát danh sách hàng đợi vào Game (tự động ẩn App và đánh đàn liên tục)">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              <span>Phát hàng đợi</span>
+            </button>
+            <div class="queue-actions-group">
+              <button id="btnShuffleQueue" class="queue-action-pill" title="Xáo trộn ngẫu nhiên thứ tự hàng đợi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+                  <polyline points="16 3 21 3 21 8"/>
+                  <line x1="4" y1="20" x2="21" y2="3"/>
+                  <polyline points="21 16 21 21 16 21"/>
+                  <line x1="15" y1="15" x2="21" y2="21"/>
+                  <line x1="4" y1="4" x2="9" y2="9"/>
+                </svg>
+                <span>Trộn bài</span>
+              </button>
+              <button id="btnLoopQueue" class="queue-action-pill" title="Bật/Tắt lặp lại hàng đợi khi hết bài">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+                  <polyline points="17 1 21 5 17 9"/>
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                  <polyline points="7 23 3 19 7 15"/>
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                </svg>
+                <span id="loopQueueText">Lặp: Tắt</span>
+              </button>
+              <button id="btnClearQueue" class="btn-clear-queue" title="Xóa toàn bộ bài hát trong hàng đợi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                <span>Xóa</span>
+              </button>
+            </div>
+          </div>
+          <div class="queue-hint-bar">
+            <span>Kéo giữ <strong class="gold-text">⋮⋮</strong> để xếp lại thứ tự • Tự động chuyển bài khi hết</span>
+          </div>
+          <div class="sidebar-song-scroll" id="queueSongList">
+            <!-- Dynamically populated queue items -->
+          </div>
+        </div>
+
+        <!-- VIEW C: CREATE & DOWNLOAD SHEETS -->
+        <div id="viewOnlineLib" class="sidebar-view-pane hidden">
+          <!-- Subtabs: Kho Sheet Web vs Tạo Sheet từ YouTube / File -->
+          <div class="online-subtabs">
+            <button id="subtabBtnOnlineStore" class="online-subtab active" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              <span>Kho Sheet Web (14.000+)</span>
+            </button>
+            <button id="subtabBtnConverter" class="online-subtab" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+              <span>Tạo Sheet (YouTube / File)</span>
+            </button>
+          </div>
+
+          <!-- PANE 1: KHO SHEET WEB -->
+          <div id="paneOnlineStore" class="online-subpane">
+            <!-- Online Search -->
+            <div class="sidebar-search">
+              <input type="text" id="onlineSearchInput" placeholder="Tìm kiếm hơn 14.000 bài từ vithai, skysheet, Discord...">
+            </div>
+
+            <!-- Online Source Filter Tabs -->
+            <div class="online-source-pills" id="onlineSourcePills">
+              <button class="source-pill active" data-source="all">Tất cả Web</button>
+              <button class="source-pill" data-source="vithai">vithai.xyz</button>
+              <button class="source-pill" data-source="sky-music">sky-music.github.io</button>
+              <button class="source-pill" data-source="skysheet">skysheet.store</button>
+              <button class="source-pill" data-source="youtube">YouTube</button>
+              <button class="source-pill" data-source="community">Cộng đồng Sky</button>
+            </div>
+
+            <!-- Online Results List (Full height, custom sleek scrollbar) -->
+            <div class="sidebar-song-scroll" id="onlineSongList">
+              <div class="online-placeholder">
+                Nhập tên bài hát ở ô trên để tìm kiếm trực tiếp trong kho sheet cộng đồng vithai.xyz, skysheet.store &amp; Sky Nightly!
+              </div>
+            </div>
+          </div>
+
+          <!-- PANE 2: TẠO SHEET TỪ YOUTUBE / FILE -->
+          <div id="paneOnlineConverter" class="online-subpane hidden">
+            <div class="create-sheet-scroll">
+              <!-- Tool Card: Audio (YouTube, MP3/WAV) & MIDI to Sheet Converter -->
+              <div class="tool-card">
+                <div class="tool-card-header">
+                  <div class="tool-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 18V5l12-2v13" />
+                      <circle cx="6" cy="18" r="3" />
+                      <circle cx="18" cy="16" r="3" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="tool-title">Tạo Sheet từ YouTube, MP3 &amp; MIDI</h4>
+                    <p class="tool-desc">DSP Skyline + Bass Gating khử đục 15 phím Sky</p>
+                  </div>
+                </div>
+
+                <!-- YouTube Direct URL Input -->
+                <div class="yt-convert-row">
+                  <input type="text" id="inputYoutubeUrl" placeholder="Dán link YouTube (https://youtu.be/...)" class="no-drag" autocomplete="off" spellcheck="false">
+                  <button id="btnConvertYoutube" class="btn-yt-convert" title="Tải âm thanh từ YouTube và tự động tạo Sheet nhạc Sky">Tạo Sheet</button>
+                </div>
+
+                <!-- Audio Transcription Controls -->
+                <div class="convert-options-row no-drag">
+                  <div style="display:flex; align-items:center; gap:5px;">
+                    <span>Phong cách:</span>
+                    <select id="selectTranscribeStyle" class="convert-select" title="Chọn phong cách chuyển soạn: Hợp âm đầy đủ, Bè đôi 2 nốt, hoặc Giai điệu đơn">
+                      <option value="chords" selected>Hợp âm đầy đủ</option>
+                      <option value="duet">Bè đôi (2 nốt)</option>
+                      <option value="solo">Giai điệu đơn</option>
+                    </select>
+                  </div>
+                  <label class="convert-checkbox-label" title="Căn chỉnh nhịp phách về lưới nốt móc kép (1/16) đều đặn để dễ theo dõi và hòa tấu">
+                    <input type="checkbox" id="chkQuantizeBeat" checked>
+                    <span>Căn nhịp chuẩn</span>
+                  </label>
+                </div>
+
+                <div class="drop-zone" id="midiDropZone">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="drop-icon">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  <span class="drop-text" id="dropZoneText">Kéo thả file <strong>.mp3 / .wav / .mid / .json / .txt</strong> vào đây</span>
+                  <input type="file" id="fileInputMidi" accept=".mp3,.wav,.ogg,.m4a,.mid,.midi,.json,.txt" class="hidden">
+                  <button id="btnBrowseFile" class="btn-browse-file">Chọn file từ máy</button>
+                </div>
+              </div>
+
+              <!-- Direct URL importer -->
+              <div class="url-import-card">
+                <div style="font-size:0.75rem; font-weight:700; margin-bottom: 5px; color: var(--gold-primary);">
+                  Dán link sheet tải trực tiếp từ Web:
+                </div>
+                <div class="url-input-group">
+                  <input type="text" id="onlineUrlInput" placeholder="Dán URL sheet vithai, skysheet, pastebin...">
+                  <button id="btnDownloadUrl" class="btn-url-fetch">Tải</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+    </div>
+
+  </div>
+
+  <!-- Modal: Cài đặt Phím tắt (Keybinds) -->
+  <div id="modalSettingsKeybind" class="modal-overlay hidden">
+    <div class="modal-card modal-settings-card">
+      <div class="modal-header-row">
+        <div class="modal-title-with-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="modal-icon">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+          <h3 class="modal-title">Cài đặt Phím tắt</h3>
+        </div>
+        <button id="btnCloseSettingsModalX" class="action-btn" title="Đóng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p class="modal-subtitle">Nhấp vào ô phím tắt để bắt đầu gán phím mới. Ấn <code>Escape</code> để hủy gán.</p>
+      
+      <div class="keybind-settings-list">
+        <div class="keybind-row">
+          <div class="keybind-info">
+            <span class="keybind-label">Ẩn / Hiện HUD</span>
+            <span class="keybind-desc">Bật/tắt thanh HUD mini nổi trên màn hình</span>
+          </div>
+          <button class="keybind-box" id="keybindBoxToggleHud" data-action="toggle_hud">Right Shift</button>
+        </div>
+
+        <div class="keybind-row">
+          <div class="keybind-info">
+            <span class="keybind-label">Phát / Tạm dừng (Play / Pause)</span>
+            <span class="keybind-desc">Phát hoặc tạm dừng bài hát hiện tại</span>
+          </div>
+          <button class="keybind-box" id="keybindBoxPlayPause" data-action="play_pause">F6</button>
+        </div>
+
+        <div class="keybind-row">
+          <div class="keybind-info">
+            <span class="keybind-label">Dừng khẩn cấp (Emergency Stop)</span>
+            <span class="keybind-desc">Nhả ngay toàn bộ phím bàn phím và dừng nhạc</span>
+          </div>
+          <button class="keybind-box" id="keybindBoxEmergencyStop" data-action="emergency_stop">F8</button>
+        </div>
+      </div>
+
+      <div id="keybindConflictAlert" class="keybind-alert hidden">Phím này đã được gán cho chức năng khác!</div>
+
+      <div class="modal-actions-between">
+        <button id="btnResetKeybinds" class="modal-btn-subtle" title="Khôi phục Right Shift, F6, F8">Khôi phục mặc định</button>
+        <div style="display:flex; gap:8px;">
+          <button id="btnCancelKeybinds" class="modal-btn-cancel">Hủy</button>
+          <button id="btnSaveKeybinds" class="modal-btn-confirm">Lưu cài đặt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Đổi Tên Bài Hát -->
+  <div id="modalRenameSong" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 class="modal-title">Đổi Tên Bài Hát</h3>
+      <input type="text" id="inputRenameSong" placeholder="Nhập tên mới..." maxlength="80" autocomplete="off">
+      <div class="modal-actions">
+        <button id="btnCancelRenameSong" class="modal-btn-cancel">Hủy</button>
+        <button id="btnConfirmRenameSong" class="modal-btn-confirm">Lưu Tên</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Xác Nhận Xóa Bài Hát -->
+  <div id="modalConfirmDelete" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 class="modal-title" style="color: var(--danger);">Xóa Bài Hát</h3>
+      <p id="deleteConfirmPromptText" class="modal-subtitle" style="margin-bottom:14px;">Bạn có chắc chắn muốn xóa bài hát này khỏi thư viện?</p>
+      <div class="modal-actions">
+        <button id="btnCancelDeleteSong" class="modal-btn-cancel">Hủy</button>
+        <button id="btnConfirmDeleteSong" class="modal-btn-danger">Xóa Vĩnh Viễn</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Tạo Playlist Mới -->
+  <div id="modalNewPlaylist" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 class="modal-title">Tạo Playlist Mới</h3>
+      <input type="text" id="inputPlaylistName" placeholder="Tên playlist (ví dụ: Nhạc Chill, Nhạc Đám Cưới...)" maxlength="30" autocomplete="off">
+      <div class="modal-actions">
+        <button id="btnCancelPlaylist" class="modal-btn-cancel">Hủy</button>
+        <button id="btnConfirmPlaylist" class="modal-btn-confirm">Tạo Playlist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Thêm Bài Hát Vào Playlist -->
+  <div id="modalAddToPlaylist" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 class="modal-title" id="playlistPickerSongTitle">Thêm vào Playlist</h3>
+      <div id="playlistCheckboxList" class="playlist-checkbox-list">
+        <!-- Dynamically rendered checklists -->
+      </div>
+      <div class="modal-actions">
+        <button id="btnCloseAddToPlaylist" class="modal-btn-confirm" style="width: 100%;">Hoàn tất</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Context Menu for Local Songs (Right-click) -->
+  <div id="songContextMenu" class="song-context-menu hidden">
+    <div class="context-item" id="ctxMenuPlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <polygon points="5 3 19 12 5 3" />
+      </svg>
+      <span>Chọn bài hát này</span>
+    </div>
+    <div class="context-item" id="ctxMenuPreview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+      </svg>
+      <span>Nghe thử bài này</span>
+    </div>
+    <div class="context-item" id="ctxMenuQueue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+      <span>Thêm vào Hàng đợi</span>
+    </div>
+    <div class="context-item" id="ctxMenuRename">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <path d="M12 20h9"></path>
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+      </svg>
+      <span>Đổi tên bài hát...</span>
+    </div>
+    <div class="context-item" id="ctxMenuPlaylist">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>Thêm vào Playlist...</span>
+    </div>
+    <div class="context-divider"></div>
+    <div class="context-item danger" id="ctxMenuDelete">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+      <span>Xóa bài hát này</span>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

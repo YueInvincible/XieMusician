@@ -1,0 +1,7 @@
+{
+  "keybinds": {
+    "toggle_hud": "right shift",
+    "play_pause": "f6",
+    "emergency_stop": "f8"
+  }
+}
